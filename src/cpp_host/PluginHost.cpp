@@ -100,20 +100,28 @@ void VstHost::processAudio(const std::string& inputFile, const std::string& outp
     // Note: Ensure correct format conversions (e.g., sample rate, bit depth) if necessary.
 }
 
-void VstHost::getParameter() {
+std::vector<VstParameter> VstHost::getParameter() {
     auto controller = plugProvider->getController();
     if (controller) {
+        // init number parameters
         int numParameters = controller->getParameterCount();
+        std::vector<VstParameter> parameters;
+        parameters.reserve(numParameters);  // Optional: Reserve to avoid reallocations
 
+
+        // get
         for (int i = 0 ; i < numParameters; ++i ) {
             Steinberg::Vst::ParameterInfo infos;
             if (controller->getParameterInfo(i, infos) == Steinberg::kResultOk) {
-                // std::string title = StringConvert::convert(infos.title);
-                std::cout << "Param: " << infos.title << " ; value: " << infos.defaultNormalizedValue << std::endl;
+                parameters.emplace_back(convertInfoToParam(infos));
             } else {
                 std::cerr << "Error fetching param at index : " << i << "." << std::endl;
             }
         }
+
+        return parameters;
+    } else {
+        throw std::runtime_error("Controller wasn't initialized");
     }
 }
 

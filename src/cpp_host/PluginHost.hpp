@@ -5,7 +5,11 @@
 #include "vst/utility/optional.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "pluginterfaces/vst/ivsthostapplication.h"
+#include "vst/utility/stringconvert.h"
 #include <string>
+#include <vector>
+
+#include "VstParameter.h"
 
 namespace Steinberg {
 namespace Vst {
@@ -19,7 +23,7 @@ public:
     void terminate();
     void processAudio(const std::string& inputFile, const std::string& outputFile);
 
-    void getParameter();
+    std::vector<VstParameter> getParameter();
 
 private:
     VST3::Hosting::Module::Ptr module {nullptr};
