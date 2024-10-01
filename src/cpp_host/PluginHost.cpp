@@ -7,6 +7,8 @@ namespace Vst {
 VstHost::VstHost() = default;
 
 VstHost::~VstHost() {
+    processor->terminate();
+    processor = nullptr;
     terminate();
 }
 
@@ -51,16 +53,16 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
         return false;
 	}
 
-    OPtr<IComponent> component = plugProvider->getComponent ();
+    processor = plugProvider->getComponent ();
 	OPtr<IEditController> controller = plugProvider->getController ();
 
-    if (!component || !controller) {
+    if (!processor || !controller) {
         std::cerr << "Failed to get component or controller from plugin." << std::endl;
         return false;
     }
 
     // Initialize component
-    if (component->initialize(nullptr) != Steinberg::kResultOk) {
+    if (processor->initialize(nullptr) != Steinberg::kResultOk) {
         std::cerr << "Failed to initialize component." << std::endl;
         return false;
     }
@@ -71,7 +73,7 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
     }
 
     // Connect component and controller (optional, but good for parameter updates)
-    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(component);
+    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(processor);
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> controllerConnection(controller);
     if (componentConnection && controllerConnection) {
         componentConnection->connect(controllerConnection);
