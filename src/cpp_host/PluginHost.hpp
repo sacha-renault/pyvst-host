@@ -1,7 +1,14 @@
 #pragma once
+
+#ifdef _WIN32
+#include <windows.h>  // For LoadLibrary, GetProcAddress
+#else
+#include <dlfcn.h>    // For dlopen, dlsym (Linux/macOS)
+#endif
+
 #include <iostream>
 #include <string>
-#include <dlfcn.h>  // For Linux/macOS
+#include <vector>
 #include "pluginterfaces/base/funknown.h"
 #include "pluginterfaces/base/ipluginbase.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
@@ -12,6 +19,9 @@ class PluginHost {
 public:
     PluginHost(const std::string& pluginPath);
     ~PluginHost();
+
+    // audio processing
+    std::vector<float> processMidiInput(const std::vector<uint8_t>& midiInput, int numSamples);
 
 private:
     void* libraryHandle = nullptr;
