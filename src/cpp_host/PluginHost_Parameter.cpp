@@ -30,9 +30,8 @@ void PluginHost::listParameters() {
     // Get the number of parameters from the controller
     Steinberg::int32 paramCount = controller->getParameterCount();
     if (paramCount == 0) {
-        // std::cout << "No parameters found for the plugin." << std::endl;
-        // return;
-        paramCount = 10;
+        std::cout << "No parameters found for the plugin." << std::endl;
+        return;
     }
 
     std::cout << "Parameters of the plugin:" << std::endl;

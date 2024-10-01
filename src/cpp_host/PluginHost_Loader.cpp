@@ -1,4 +1,5 @@
 #include "PluginHost.hpp"
+#include "MemoryStream.h"
 
 PluginHost::PluginHost(const std::string& pluginPath) {
     if (!loadPlugin(pluginPath)) {
@@ -8,8 +9,20 @@ PluginHost::PluginHost(const std::string& pluginPath) {
         component->setState(nullptr);
         if (component->setActive(true) != Steinberg::kResultOk) {
             std::cerr << "Failed to activate the component." << std::endl;
+            return;
         }
-        controller->setComponentState(nullptr);
+
+        // Get the component state and apply it to the controller
+        MemoryStream componentStateStream;
+        if (component->getState(&componentStateStream) == Steinberg::kResultOk) {
+            if (controller->setComponentState(&componentStateStream) != Steinberg::kResultOk) {
+                std::cerr << "Failed to set component state for controller." << std::endl;
+                return;
+            }
+        } else {
+            std::cerr << "Failed to get component state from component." << std::endl;
+            return;
+        }
     }
 }
 
