@@ -16,7 +16,8 @@
 
                 "-o",
                 "${workspaceFolder}/main",
-                "-ldl", "-lstdc++fs"
+                "-ldl", "-lstdc++fs", 
+                "-lsndfile" // For test purpose only
             ],
             "options": {
                 "cwd": "${fileDirname}"

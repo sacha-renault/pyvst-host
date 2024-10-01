@@ -33,8 +33,7 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
 		reason += path;
 		reason += "\nError: ";
 		reason += error;
-		std::cerr << reason << std::endl;
-        return false;
+		throw std::runtime_error(reason);
 	}
 
     auto factory = module->getFactory ();
@@ -61,8 +60,7 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
 		else
 			error = "No VST3 Audio Module Class found in file ";
 		error += path;
-		std::cerr << error << std::endl;
-        return false;
+		throw std::runtime_error(error);
 	}
 
     component = plugProvider->getComponent ();
@@ -109,32 +107,39 @@ void VstHost::terminate() {
     component = nullptr;
 }
 
-void VstHost::process(std::vector<float>& inputBuffer, std::vector<float>& outputBuffer) {
-    // Ensure input and output buffers have the same size
-    if (inputBuffer.size() != outputBuffer.size()) {
-        std::cerr << "Input and output buffers must have the same size." << std::endl;
-        return;
+void VstHost::process(float** inputBuffers, float** outputBuffers, int numChannels, int numSamples) {
+    // Ensure input and output buffers are valid
+    if (numChannels <= 0) {
+        throw std::runtime_error("Number of channels must be greater than zero.");
     }
 
-    // prepare the process data object
+    if (!inputBuffers || !outputBuffers) {
+        throw std::runtime_error("Input and output buffers must be valid.");
+    }
+
+    // Prepare the process data object
     Steinberg::Vst::ProcessData processData = {};
+    processData.numSamples = numSamples;
 
-    // Example workflow:
+    // Set up input and output audio bus buffers
+    Steinberg::Vst::AudioBusBuffers inputBus;
+    inputBus.numChannels = numChannels; // Stereo
+    inputBus.channelBuffers32 = inputBuffers;
+
+    Steinberg::Vst::AudioBusBuffers outputBus;
+    outputBus.numChannels = numChannels; // Stereo
+    outputBus.channelBuffers32 = outputBuffers;
+
+    // Assign buses to process data
+    processData.inputs = &inputBus;
+    processData.outputs = &outputBus;
+    processData.numInputs = 1;
+    processData.numOutputs = 1;
+
+    // For parameter change
     Steinberg::Vst::ParameterChanges parameterChanges;
-    for (const auto& [paramID, value] : parametersChangeMap) {
-        Steinberg::int32 queueIndex = -1;
-        Steinberg::Vst::IParamValueQueue* queue = parameterChanges.addParameterData(paramID, queueIndex);
-        if (queue) {
-            Steinberg::int32 pointIndex = -1;
-            queue->addPoint(0, value, pointIndex);
-        }
-    }
+    prepareParametersChange(parameterChanges);
     processData.inputParameterChanges = &parameterChanges;
-
-    // 1. Load input audio data into a buffer (e.g., using an audio library).
-    // 2. Prepare the buffer to be processed by the plugin.
-    // 3. Call the plugin's `process()` method to modify the audio data.
-    // 4. Write the output buffer to the output file.
 
     Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
     if (component->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
@@ -143,10 +148,65 @@ void VstHost::process(std::vector<float>& inputBuffer, std::vector<float>& outpu
         throw std::runtime_error("Couldn't access audio interface");
     }
 
-    // clear parametersChangeMap
-    parametersChangeMap.clear();
+    // Note: Ensure correct format conversions (e.g., sample rate, bit depth) if necessary.
+}
+
+void VstHost::process(Steinberg::Vst::EventList& eventList, float** outputBuffers, int numChannels, int numSamples) {
+    // Ensure output buffers are valid
+    if (numChannels <= 0) {
+        std::cerr << "Number of channels must be greater than zero." << std::endl;
+        return;
+    }
+
+    if (!outputBuffers) {
+        std::cerr << "Output buffers must be valid." << std::endl;
+        return;
+    }
+
+    // Prepare the process data object
+    Steinberg::Vst::ProcessData processData = {};
+    processData.numSamples = numSamples;
+
+    // Set up output audio bus buffers
+    Steinberg::Vst::AudioBusBuffers outputBus;
+    outputBus.numChannels = numChannels;
+    outputBus.channelBuffers32 = outputBuffers;
+
+    // Assign buses to process data
+    processData.outputs = &outputBus;
+    processData.numOutputs = 1;
+
+    // Assign event list to process data
+    processData.inputEvents = &eventList;
+
+    // For parameter change
+    Steinberg::Vst::ParameterChanges parameterChanges;
+    prepareParametersChange(parameterChanges);
+    processData.inputParameterChanges = &parameterChanges;
+
+    // Access the audio processor
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
+    if (component->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
+        audioProcessor->process(processData);
+    } else {
+        throw std::runtime_error("Couldn't access audio interface");
+    }
 
     // Note: Ensure correct format conversions (e.g., sample rate, bit depth) if necessary.
+}
+
+void VstHost::prepareParametersChange(Steinberg::Vst::ParameterChanges& parameterChanges) {
+    for (const auto& [paramID, value] : parametersChangeMap) {
+        Steinberg::int32 queueIndex = -1;
+        Steinberg::Vst::IParamValueQueue* queue = parameterChanges.addParameterData(paramID, queueIndex);
+        if (queue) {
+            Steinberg::int32 pointIndex = -1;
+            queue->addPoint(0, value, pointIndex);
+        }
+    }
+
+    // clear parametersChangeMap
+    parametersChangeMap.clear();
 }
 
 std::vector<VstParameter> VstHost::getParameters() {

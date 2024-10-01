@@ -3,6 +3,7 @@
 #include "vst/hosting/module.h"
 #include "vst/hosting/plugprovider.h"
 #include "vst/utility/optional.h"
+#include "vst/hosting/eventlist.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 #include "pluginterfaces/vst/ivsthostapplication.h"
@@ -28,7 +29,12 @@ public:
 
     bool init(const std::string& path, VST3::Optional<VST3::UID> effectID = {});
     void terminate();
-    void process(std::vector<float>& inputBuffer, std::vector<float>& outputBuffer);
+
+    // Function for effet (process audio input)
+    void process(float** inputBuffers, float** outputBuffers, int numChannels, int numSamples);
+
+    // Function for synth (process a serie of event)
+    void process(Steinberg::Vst::EventList& eventList, float** outputBuffers, int numChannels, int numSamples);
 
     std::vector<VstParameter> getParameters();
     void setParameter(unsigned int id, double value);
@@ -40,6 +46,8 @@ private:
     IPtr<IEditController> controller {nullptr};
     std::unordered_map<unsigned int, double> parametersChangeMap;
     Steinberg::Vst::ProcessSetup setup_;
+
+    void prepareParametersChange(Steinberg::Vst::ParameterChanges& parameterChanges);
 };
 
 } // namespace Vst
