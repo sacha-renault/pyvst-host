@@ -100,7 +100,7 @@ void VstHost::processAudio(const std::string& inputFile, const std::string& outp
     // Note: Ensure correct format conversions (e.g., sample rate, bit depth) if necessary.
 }
 
-std::vector<VstParameter> VstHost::getParameter() {
+std::vector<VstParameter> VstHost::getParameters() {
     auto controller = plugProvider->getController();
     if (controller) {
         // init number parameters

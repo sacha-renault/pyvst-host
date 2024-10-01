@@ -5,7 +5,7 @@
 int main() {
     auto host = Steinberg::Vst::VstHost(); // vst3
     host.init("VitalInstaller/lib/vst3/Vital.vst3");
-    auto params = host.getParameter();
+    auto params = host.getParameters();
 
     for (const auto& param : params) {
         std::cout << "Parameter: " << param.title << "\n";

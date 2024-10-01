@@ -23,7 +23,7 @@ public:
     void terminate();
     void processAudio(const std::string& inputFile, const std::string& outputFile);
 
-    std::vector<VstParameter> getParameter();
+    std::vector<VstParameter> getParameters();
 
 private:
     VST3::Hosting::Module::Ptr module {nullptr};
