@@ -22,6 +22,8 @@ public:
 
     // audio processing
     std::vector<float> processMidiInput(const std::vector<uint8_t>& midiInput, int numSamples);
+    void listParameters();
+    void setParameter(Steinberg::Vst::ParamID paramID, float normalizedValue);
 
 private:
     void* libraryHandle = nullptr;

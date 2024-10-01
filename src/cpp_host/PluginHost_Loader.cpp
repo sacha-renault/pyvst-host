@@ -4,6 +4,12 @@ PluginHost::PluginHost(const std::string& pluginPath) {
     if (!loadPlugin(pluginPath)) {
         // throw std::runtime_error("Coudln't load vst");
         std::cerr << "Failed to load plugin from: " << pluginPath << std::endl;
+    } else {
+        component->setState(nullptr);
+        if (component->setActive(true) != Steinberg::kResultOk) {
+            std::cerr << "Failed to activate the component." << std::endl;
+        }
+        controller->setComponentState(nullptr);
     }
 }
 
