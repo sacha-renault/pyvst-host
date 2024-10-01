@@ -53,6 +53,31 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
 
     OPtr<IComponent> component = plugProvider->getComponent ();
 	OPtr<IEditController> controller = plugProvider->getController ();
+
+    if (!component || !controller) {
+        std::cerr << "Failed to get component or controller from plugin." << std::endl;
+        return false;
+    }
+
+    // Initialize component
+    if (component->initialize(nullptr) != Steinberg::kResultOk) {
+        std::cerr << "Failed to initialize component." << std::endl;
+        return false;
+    }
+
+    if (controller->initialize(nullptr) != Steinberg::kResultOk) {
+        std::cerr << "Failed to initialize controller." << std::endl;
+        return false;
+    }
+
+    // Connect component and controller (optional, but good for parameter updates)
+    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(component);
+    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> controllerConnection(controller);
+    if (componentConnection && controllerConnection) {
+        componentConnection->connect(controllerConnection);
+        controllerConnection->connect(componentConnection);
+    }
+
     return true;
 }
 
@@ -73,6 +98,23 @@ void VstHost::processAudio(const std::string& inputFile, const std::string& outp
     // 4. Write the output buffer to the output file.
 
     // Note: Ensure correct format conversions (e.g., sample rate, bit depth) if necessary.
+}
+
+void VstHost::getParameter() {
+    auto controller = plugProvider->getController();
+    if (controller) {
+        int numParameters = controller->getParameterCount();
+
+        for (int i = 0 ; i < numParameters; ++i ) {
+            Steinberg::Vst::ParameterInfo infos;
+            if (controller->getParameterInfo(i, infos) == Steinberg::kResultOk) {
+                // std::string title = StringConvert::convert(infos.title);
+                std::cout << "Param: " << infos.title << " ; value: " << infos.defaultNormalizedValue << std::endl;
+            } else {
+                std::cerr << "Error fetching param at index : " << i << "." << std::endl;
+            }
+        }
+    }
 }
 
 } // namespace Vst
