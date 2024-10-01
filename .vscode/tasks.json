@@ -11,6 +11,7 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "main.cpp",
+                "src/cpp_host/*.cpp",
                 "pluginterfaces/base/funknown.cpp", // ref to Steinberg::FUID
                 "base/source/baseiids.cpp", // ref ti Steinberg::Vst::IEditController::iid
                 "public.sdk/source/common/commoniids.cpp",
