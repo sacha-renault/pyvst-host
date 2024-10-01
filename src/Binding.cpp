@@ -37,6 +37,8 @@ void py_init_module_MYLIB(py::module& m)      //  rename this function name!!!
             &Steinberg::Vst::VstHost::processAudio, py::arg("input_file"), py::arg("output_file"))
         .def("get_parameters",
             &Steinberg::Vst::VstHost::getParameters)
+        .def("set_parameter",
+            &Steinberg::Vst::VstHost::setParameter, py::arg("id"), py::arg("value"))
         ;
     ////////////////////    </generated_from:PluginHost.hpp>    ////////////////////
 

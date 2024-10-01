@@ -7,8 +7,10 @@ namespace Vst {
 VstHost::VstHost() = default;
 
 VstHost::~VstHost() {
+    controller->terminate();
     processor->terminate();
     processor = nullptr;
+    controller = nullptr;
     terminate();
 }
 
@@ -54,7 +56,7 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
 	}
 
     processor = plugProvider->getComponent ();
-	OPtr<IEditController> controller = plugProvider->getController ();
+	controller = plugProvider->getController ();
 
     if (!processor || !controller) {
         std::cerr << "Failed to get component or controller from plugin." << std::endl;
@@ -62,7 +64,7 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
     }
 
     // Initialize component
-    if (processor->initialize(nullptr) != Steinberg::kResultOk) {
+    if (processor->initialize(nullptr) != Steinberg::kResultOk || processor->setActive(true) != Steinberg::kResultOk) {
         std::cerr << "Failed to initialize component." << std::endl;
         return false;
     }
@@ -93,17 +95,40 @@ void VstHost::processAudio(const std::string& inputFile, const std::string& outp
     // Placeholder: implement audio file reading, plugin processing, and file writing.
     std::cout << "Processing audio from: " << inputFile << " to: " << outputFile << std::endl;
 
+    // prepare the process data object
+    Steinberg::Vst::ProcessData processData = {};
+
     // Example workflow:
+    Steinberg::Vst::ParameterChanges parameterChanges;
+    for (const auto& [paramID, value] : parametersChangeMap) {
+        Steinberg::int32 queueIndex = -1;
+        Steinberg::Vst::IParamValueQueue* queue = parameterChanges.addParameterData(paramID, queueIndex);
+        if (queue) {
+            Steinberg::int32 pointIndex = -1;
+            queue->addPoint(0, value, pointIndex);
+        }
+    }
+    processData.inputParameterChanges = &parameterChanges;
+
     // 1. Load input audio data into a buffer (e.g., using an audio library).
     // 2. Prepare the buffer to be processed by the plugin.
     // 3. Call the plugin's `process()` method to modify the audio data.
     // 4. Write the output buffer to the output file.
 
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
+    if (processor->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
+        // audioProcessor->process();
+    } else {
+        throw std::runtime_error("Couldn't access audio interface");
+    }
+
+    // clear parametersChangeMap
+    parametersChangeMap.clear();
+
     // Note: Ensure correct format conversions (e.g., sample rate, bit depth) if necessary.
 }
 
 std::vector<VstParameter> VstHost::getParameters() {
-    auto controller = plugProvider->getController();
     if (controller) {
         // init number parameters
         int numParameters = controller->getParameterCount();
@@ -125,6 +150,12 @@ std::vector<VstParameter> VstHost::getParameters() {
     } else {
         throw std::runtime_error("Controller wasn't initialized");
     }
+}
+
+void VstHost::setParameter(unsigned int id, double value) {
+    // Ensure value is normalized to the range [0.0, 1.0]
+    if (value > 1.0) value = 1.0;
+    if (value < 0.0) value = 0.0;
 }
 
 } // namespace Vst

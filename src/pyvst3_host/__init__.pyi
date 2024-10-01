@@ -29,6 +29,8 @@ class VstHost:
 
     def get_parameters(self) -> List[VstParameter]:
         pass
+    def set_parameter(self, id: int, value: float) -> None:
+        pass
 
 
 
