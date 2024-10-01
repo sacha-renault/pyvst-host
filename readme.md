@@ -1,5 +1,5 @@
 ## Clone repo with recursion
 
 ```sh
-git clone --recurse-submodules <git url (yet unknown)>
+git clone --recurse-submodules https://github.com/sacha-renault/pyvst-host
 ```
