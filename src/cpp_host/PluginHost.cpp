@@ -4,12 +4,22 @@
 namespace Steinberg {
 namespace Vst {
 
-VstHost::VstHost() = default;
+VstHost::VstHost(
+    double samplerate,
+    int maxSamplesPerBlock,
+    int processMode,
+    int symbolicSampleSize)
+{
+    setup_.maxSamplesPerBlock = maxSamplesPerBlock;
+    setup_.sampleRate = samplerate;
+    setup_.symbolicSampleSize = symbolicSampleSize;
+    setup_.processMode = processMode;
+};
 
 VstHost::~VstHost() {
     controller->terminate();
-    processor->terminate();
-    processor = nullptr;
+    component->terminate();
+    component = nullptr;
     controller = nullptr;
     terminate();
 }
@@ -55,16 +65,16 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
         return false;
 	}
 
-    processor = plugProvider->getComponent ();
+    component = plugProvider->getComponent ();
 	controller = plugProvider->getController ();
 
-    if (!processor || !controller) {
+    if (!component || !controller) {
         std::cerr << "Failed to get component or controller from plugin." << std::endl;
         return false;
     }
 
     // Initialize component
-    if (processor->initialize(nullptr) != Steinberg::kResultOk || processor->setActive(true) != Steinberg::kResultOk) {
+    if (component->initialize(nullptr) != Steinberg::kResultOk || component->setActive(true) != Steinberg::kResultOk) {
         std::cerr << "Failed to initialize component." << std::endl;
         return false;
     }
@@ -75,11 +85,19 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
     }
 
     // Connect component and controller (optional, but good for parameter updates)
-    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(processor);
+    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(component);
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> controllerConnection(controller);
     if (componentConnection && controllerConnection) {
         componentConnection->connect(controllerConnection);
         controllerConnection->connect(componentConnection);
+    }
+
+    // get the processor object
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
+    if (component->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
+        audioProcessor->setupProcessing(setup_);
+    } else {
+        throw std::runtime_error("Couldn't access audio interface");
     }
 
     return true;
@@ -88,12 +106,15 @@ bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) 
 void VstHost::terminate() {
     plugProvider = nullptr;
     module = nullptr;
-    processor = nullptr;
+    component = nullptr;
 }
 
-void VstHost::processAudio(const std::string& inputFile, const std::string& outputFile) {
-    // Placeholder: implement audio file reading, plugin processing, and file writing.
-    std::cout << "Processing audio from: " << inputFile << " to: " << outputFile << std::endl;
+void VstHost::process(std::vector<float>& inputBuffer, std::vector<float>& outputBuffer) {
+    // Ensure input and output buffers have the same size
+    if (inputBuffer.size() != outputBuffer.size()) {
+        std::cerr << "Input and output buffers must have the same size." << std::endl;
+        return;
+    }
 
     // prepare the process data object
     Steinberg::Vst::ProcessData processData = {};
@@ -116,8 +137,8 @@ void VstHost::processAudio(const std::string& inputFile, const std::string& outp
     // 4. Write the output buffer to the output file.
 
     Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
-    if (processor->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
-        // audioProcessor->process();
+    if (component->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
+        audioProcessor->process(processData);
     } else {
         throw std::runtime_error("Couldn't access audio interface");
     }
@@ -156,6 +177,7 @@ void VstHost::setParameter(unsigned int id, double value) {
     // Ensure value is normalized to the range [0.0, 1.0]
     if (value > 1.0) value = 1.0;
     if (value < 0.0) value = 0.0;
+    parametersChangeMap[id] = value; // change value here.
 }
 
 } // namespace Vst
