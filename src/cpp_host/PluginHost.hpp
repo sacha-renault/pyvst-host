@@ -1,24 +1,113 @@
+#include <iostream>
 #include <string>
-#include <iostream> // For demonstration purposes
-#include "vst/vstcomponent.h"
+#include <dlfcn.h>  // For Linux/macOS
+#include "pluginterfaces/base/funknown.h"
+#include "pluginterfaces/base/ipluginbase.h"
+#include "pluginterfaces/vst/ivstaudioprocessor.h"
+#include "pluginterfaces/vst/ivsteditcontroller.h"
+#include "main/pluginfactory.h"
 
-class PluginHost {
+DEF_CLASS_IID (Steinberg::Vst::IComponent)
+DEF_CLASS_IID (Steinberg::Vst::IEditController)
+
+class PluginLoader {
 public:
-    PluginHost(const std::string& path) {
-        Steinberg::Vst::IComponent* component = nullptr;
+    PluginLoader(const std::string& pluginPath) {
+        if (!loadPlugin(pluginPath)) {
+            // throw std::runtime_error("Coudln't load vst");
+            std::cerr << "Failed to load plugin from: " << pluginPath << std::endl;
+        }
     }
 
-    void loadPlugin(const std::string& pluginPath) {
-        // TODO: Load the VST3 plugin from the specified path
-        std::cout << "Loading plugin from: " << pluginPath << std::endl;
-        // Implement loading logic here
+    ~PluginLoader() {
+        if (component) {
+            component->terminate();
+            component->release();
+        }
+        if (controller) {
+            controller->terminate();
+            controller->release();
+        }
+        if (libraryHandle) {
+            dlclose(libraryHandle);
+        }
     }
 
-    void processAudio() {
-        // TODO: Process audio through the loaded plugins
-        std::cout << "Processing audio..." << std::endl;
-        // Implement audio processing logic here
-    }
+private:
+    void* libraryHandle = nullptr;
+    Steinberg::Vst::IComponent* component = nullptr;
+    Steinberg::Vst::IEditController* controller = nullptr;
 
-    // Additional methods for managing plugins, audio processing, etc.
+    bool loadPlugin(const std::string& path) {
+        // Step 1: Load the dynamic library
+        libraryHandle = dlopen(path.c_str(), RTLD_LAZY);
+        if (!libraryHandle) {
+            std::cerr << "Failed to load library: " << dlerror() << std::endl;
+            return false;
+        }
+
+        // Step 2: Get the GetPluginFactory function
+        using GetFactoryProc = Steinberg::IPluginFactory* (*)();
+        auto getFactory = (GetFactoryProc)dlsym(libraryHandle, "GetPluginFactory");
+        if (!getFactory) {
+            std::cerr << "Failed to get factory function: " << dlerror() << std::endl;
+            return false;
+        }
+
+        // Step 3: Get the plugin factory
+        Steinberg::IPluginFactory* factory = getFactory();
+        if (!factory) {
+            std::cerr << "Failed to get plugin factory." << std::endl;
+            return false;
+        }
+
+        // Step 4: Iterate over available classes and create an instance
+        Steinberg::int32 count = factory->countClasses();
+        for (Steinberg::int32 i = 0; i < count; ++i) {
+            Steinberg::PClassInfo classInfo = {};
+            if (factory->getClassInfo(i, &classInfo) == Steinberg::kResultOk) {
+                std::cout << "Found plugin class: " << classInfo.name << ", Category: " << classInfo.category << std::endl;
+
+                if (strcmp(classInfo.category, kVstAudioEffectClass) == 0) {
+                    // Create the audio component
+                    if (factory->createInstance(classInfo.cid, Steinberg::Vst::IComponent::iid, (void**)&component) == Steinberg::kResultOk) {
+                        if (component->initialize(nullptr) == Steinberg::kResultOk) {
+                            std::cout << "Successfully created IComponent instance: " << classInfo.name << std::endl;
+                        } else {
+                            std::cerr << "Failed to initialize IComponent." << std::endl;
+                            return false;
+                        }
+                    } else {
+                        std::cerr << "kVstAudioEffectClass wasn't loaded" << std::endl;
+                    }
+                } else if (strcmp(classInfo.category, kVstComponentControllerClass) == 0) {
+                    // Create the controller
+                    if (factory->createInstance(classInfo.cid, Steinberg::Vst::IEditController::iid, (void**)&controller) == Steinberg::kResultOk) {
+                        if (controller->initialize(nullptr) == Steinberg::kResultOk) {
+                            std::cout << "Successfully created IEditController instance: " << classInfo.name << std::endl;
+
+                            // Link the controller to the component if both are available
+                            if (component) {
+                                controller->setComponentState(nullptr); // Typically, you'd provide state data here
+                            }
+                        } else {
+                            std::cerr << "Failed to initialize IEditController." << std::endl;
+                            return false;
+                        }
+                    } else {
+                        std::cerr << "kVstComponentControllerClass wasn't loaded" << std::endl;
+                    }
+                } else {
+                    throw std::runtime_error("Unknown vst component category");
+                }
+            }
+        }
+
+        if (component && controller) {
+            return true; // Both component and controller are loaded successfully
+        } else {
+            std::cerr << "No suitable component or controller found in the plugin." << std::endl;
+            return false;
+        }
+    }
 };

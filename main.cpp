@@ -1,7 +1,7 @@
 #include "src/cpp_host/PluginHost.hpp"
-// #include "public.sdk/source/vst/vstcomponent.h"
 
 
 int main() {
+    auto hosted = PluginLoader("VitalInstaller/lib/vst3/Vital.vst3/Contents/x86_64-linux/Vital.so");
     return 0;
 }

@@ -12,7 +12,9 @@
                 "-g",
                 "main.cpp",
                 "pluginterfaces/base/funknown.cpp", // ref to Steinberg::FUID
-                // "", // ref ti Steinberg::Vst::IEditController::iid
+                "base/source/baseiids.cpp", // ref ti Steinberg::Vst::IEditController::iid
+                "public.sdk/source/common/commoniids.cpp",
+                "", // ref ti Steinberg::Vst::IEditController::iid
                 "-o",
                 "${workspaceFolder}/main",
                 "-ldl"
