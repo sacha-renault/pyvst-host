@@ -22,20 +22,33 @@ PluginHost::~PluginHost() {
 }
 
 bool PluginHost::loadPlugin(const std::string& path) {
-    // Step 1: Load the dynamic library
+#ifdef _WIN32
+    libraryHandle = LoadLibraryA(path.c_str());
+    if (!libraryHandle) {
+        std::cerr << "Failed to load library: " << path << std::endl;
+        return false;
+    }
+
+    using GetFactoryProc = Steinberg::IPluginFactory* (*)();
+    GetFactoryProc getFactory = reinterpret_cast<GetFactoryProc>(GetProcAddress(libraryHandle, "GetPluginFactory"));
+    if (!getFactory) {
+        std::cerr << "Failed to get factory function from library: " << path << std::endl;
+        return false;
+    }
+#else
     libraryHandle = dlopen(path.c_str(), RTLD_LAZY);
     if (!libraryHandle) {
         std::cerr << "Failed to load library: " << dlerror() << std::endl;
         return false;
     }
 
-    // Step 2: Get the GetPluginFactory function
     using GetFactoryProc = Steinberg::IPluginFactory* (*)();
-    auto getFactory = (GetFactoryProc)dlsym(libraryHandle, "GetPluginFactory");
+    GetFactoryProc getFactory = reinterpret_cast<GetFactoryProc>(dlsym(libraryHandle, "GetPluginFactory"));
     if (!getFactory) {
         std::cerr << "Failed to get factory function: " << dlerror() << std::endl;
         return false;
     }
+#endif
 
     // Step 3: Get the plugin factory
     Steinberg::IPluginFactory* factory = getFactory();
