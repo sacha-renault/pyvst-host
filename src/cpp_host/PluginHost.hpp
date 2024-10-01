@@ -1,33 +1,28 @@
 #pragma once
 
-#ifdef _WIN32
-#include <windows.h>  // For LoadLibrary, GetProcAddress
-#else
-#include <dlfcn.h>    // For dlopen, dlsym (Linux/macOS)
-#endif
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include "pluginterfaces/base/funknown.h"
-#include "pluginterfaces/base/ipluginbase.h"
+#include "vst/hosting/module.h"
+#include "vst/hosting/plugprovider.h"
+#include "vst/utility/optional.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
-#include "pluginterfaces/vst/ivsteditcontroller.h"
-#include "main/pluginfactory.h"
+#include <string>
 
-class PluginHost {
+namespace Steinberg {
+namespace Vst {
+
+class VstHost {
 public:
-    PluginHost(const std::string& pluginPath);
-    ~PluginHost();
+    VstHost();
+    ~VstHost();
 
-    // audio processing
-    std::vector<float> processMidiInput(const std::vector<uint8_t>& midiInput, int numSamples);
-    void listParameters();
-    void setParameter(Steinberg::Vst::ParamID paramID, float normalizedValue);
+    bool init(const std::string& path, VST3::Optional<VST3::UID> effectID = {});
+    void terminate();
+    void processAudio(const std::string& inputFile, const std::string& outputFile);
 
 private:
-    void* libraryHandle = nullptr;
-    Steinberg::Vst::IComponent* component = nullptr;
-    Steinberg::Vst::IEditController* controller = nullptr;
-    bool loadPlugin(const std::string& path);
+    VST3::Hosting::Module::Ptr module {nullptr};
+    IPtr<PlugProvider> plugProvider {nullptr};
+    IPtr<IComponent> processor {nullptr};
 };
+
+} // namespace Vst
+} // namespace Steinberg
