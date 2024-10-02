@@ -32,21 +32,24 @@ public:
 
     // Constructor to create from a NumPy array
     AudioBufferWrapper(py::array_t<float> numpyArray) {
-        // Ensure the NumPy array is 2D and has compatible dimensions
-        if (numpyArray.ndim() != 2) {
-            throw std::runtime_error("NumPy array must be 2-dimensional (samples x channels).");
+        // Get buffer information from NumPy
+        auto buf_info = numpyArray.request();
+
+        // Ensure the NumPy array is 2D and has compatible dimensions (channels x samples)
+        if (buf_info.ndim != 2) {
+            throw std::runtime_error("NumPy array must be 2-dimensional (channels x samples).");
         }
 
-        numSamples_ = numpyArray.shape(0);
-        numChannels_ = numpyArray.shape(1);
+        numChannels_ = buf_info.shape[0];  // Number of channels
+        numSamples_ = buf_info.shape[1];    // Number of samples per channel
 
         // Get the pointer to the NumPy data (no copy)
-        float* dataPtr = static_cast<float*>(numpyArray.request().ptr);
+        float* dataPtr = static_cast<float*>(buf_info.ptr);
 
         // Allocate memory for channel pointers
         buffer_ = new float*[numChannels_];
 
-        // Point each channel pointer to the corresponding offset in the NumPy data
+        // Point each channel to the start of its respective data in the NumPy array
         for (int channel = 0; channel < numChannels_; ++channel) {
             buffer_[channel] = dataPtr + (channel * numSamples_);
         }
@@ -82,13 +85,14 @@ public:
             throw std::runtime_error("Cannot convert to NumPy array as the buffer is not owned.");
         }
 
-        // Create a NumPy array from the existing data
+        // Create a NumPy array from the existing non-interleaved data
         return py::array_t<float>(
-            {numSamples_, numChannels_},              // Shape: samples x channels
-            {sizeof(float) * numChannels_, sizeof(float)}, // Strides
+            {numChannels_, numSamples_},              // Shape: channels x samples
+            {sizeof(float) * numSamples_, sizeof(float)}, // Strides: non-interleaved data layout
             data_                                     // Data pointer
         );
     }
+
 
 private:
     int numChannels_;
