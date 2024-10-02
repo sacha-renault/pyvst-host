@@ -15,5 +15,6 @@
 #include "vst/hosting/connectionproxy.cpp"
 #include "vst/hosting/parameterchanges.cpp"
 #include "vst/hosting/eventlist.cpp"
+#include "common/memorystream.cpp"
 #include "pluginterfaces/base/funknown.cpp"
 #include "common/commonstringconvert.cpp"

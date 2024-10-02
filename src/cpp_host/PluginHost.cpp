@@ -273,5 +273,51 @@ void VstHost::setParameter(std::string title, double value) {
     setParameter(parametersTitleIdMap[title], value);
 }
 
+void VstHost::savePreset(std::string& path) {
+    auto* state = new Steinberg::MemoryStream();
+    if (component->getState(state) == Steinberg::kResultOk) {
+        std::ofstream outFile("plugin_state.vstpreset", std::ios::binary);
+        if (outFile.is_open()) {
+            outFile.write(reinterpret_cast<const char*>(state->getData()), state->getSize());
+            outFile.close();
+        }
+    } else {
+        throw std::runtime_error("Coudln't access processor state.");
+    }
+}
+
+void VstHost::loadPreset(const std::string& path) {
+    // Open the file in binary mode
+    std::ifstream inFile(path, std::ios::binary);
+    if (inFile.is_open()) {
+        // Get the file size
+        inFile.seekg(0, std::ios::end);
+        std::streamsize size = inFile.tellg();
+        inFile.seekg(0, std::ios::beg);
+
+        // Read the file data into a buffer
+        std::vector<char> buffer(size);
+        if (inFile.read(buffer.data(), size)) {
+            // Create a MemoryStream from the buffer
+            auto* state = new Steinberg::MemoryStream(buffer.data(), size);
+            
+            // Set the state in the plugin component
+            if (component->setState(state) != Steinberg::kResultOk) {
+                delete state;
+                throw std::runtime_error("Failed to set processor state.");
+            }            
+
+            // Clean up
+            delete state;
+        } else {
+            throw std::runtime_error("Failed to read preset file.");
+        }
+
+        inFile.close();
+    } else {
+        throw std::runtime_error("Couldn't open preset file.");
+    }
+}
+
 } // namespace Vst
 } // namespace Steinberg

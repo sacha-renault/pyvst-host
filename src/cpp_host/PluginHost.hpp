@@ -4,14 +4,17 @@
 #include "vst/hosting/plugprovider.h"
 #include "vst/utility/optional.h"
 #include "vst/hosting/eventlist.h"
+#include "vst/hosting/parameterchanges.h"
+#include "vst/utility/stringconvert.h"
+#include "common/memorystream.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 #include "pluginterfaces/vst/ivsthostapplication.h"
-#include "vst/hosting/parameterchanges.h"
-#include "vst/utility/stringconvert.h"
+
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <fstream>
 
 #include "VstParameter.h"
 
@@ -36,9 +39,12 @@ public:
     // Function for synth (process a serie of event)
     void process(Steinberg::Vst::EventList& eventList, float** outputBuffers, int numChannels, int numSamples);
 
+    // param & states
     std::vector<VstParameter> getParameters();
     void setParameter(unsigned int id, double value);
     void setParameter(std::string title, double value);
+    void savePreset(std::string& path);
+    void loadPreset(const std::string& path);
 
 private:
     VST3::Hosting::Module::Ptr module {nullptr};
