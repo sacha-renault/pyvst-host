@@ -202,7 +202,9 @@ void VstHost::process(Steinberg::Vst::EventList& eventList, float** outputBuffer
 }
 
 void VstHost::prepareParametersChange(Steinberg::Vst::ParameterChanges& parameterChanges) {
-    for (const auto& [paramID, value] : parametersChangeMap) {
+    for (const auto& entry : parametersChangeMap) {
+        const unsigned int& paramID = entry.first;
+        const double& value = entry.second;
         Steinberg::int32 queueIndex = -1;
         Steinberg::Vst::IParamValueQueue* queue = parameterChanges.addParameterData(paramID, queueIndex);
         if (queue) {
@@ -213,7 +215,9 @@ void VstHost::prepareParametersChange(Steinberg::Vst::ParameterChanges& paramete
 
     // the parameter change wil be pased to audio processor,
     // We have to warn controller
-    for (const auto& [paramID, value] : parametersChangeMap) {
+    for (const auto& entry : parametersChangeMap) {
+        const unsigned int& paramID = entry.first;
+        const double& value = entry.second;
         controller->setParamNormalized(paramID, value);
     }
 
