@@ -92,8 +92,8 @@ bool VstHost::init(const std::string& path /*, const VST3::Optional<VST3::UID>& 
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(component);
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> controllerConnection(controller);
     if (componentConnection && controllerConnection) {
-        componentConnection->connect(controllerConnection);
         controllerConnection->connect(componentConnection);
+        //componentConnection->connect(controllerConnection);
     }
 
     // get the processor object
@@ -287,37 +287,49 @@ void VstHost::savePreset(std::string& path) {
 }
 
 void VstHost::loadPreset(const std::string& path) {
-    // Open the file in binary mode
+    // first set component to inactive
+    if (component->setActive(false) != kResultOk) {
+        throw std::runtime_error("Couldn't stop component before loading preset");
+    }
+
+    // Load preset into component
     std::ifstream inFile(path, std::ios::binary);
-    if (inFile.is_open()) {
-        // Get the file size
-        inFile.seekg(0, std::ios::end);
-        std::streamsize size = inFile.tellg();
-        inFile.seekg(0, std::ios::beg);
-
-        // Read the file data into a buffer
-        std::vector<char> buffer(size);
-        if (inFile.read(buffer.data(), size)) {
-            // Create a MemoryStream from the buffer
-            auto* state = new Steinberg::MemoryStream(buffer.data(), size);
-            
-            // Set the state in the plugin component
-            if (component->setState(state) != Steinberg::kResultOk) {
-                delete state;
-                throw std::runtime_error("Failed to set processor state.");
-            }            
-
-            // Clean up
-            delete state;
-        } else {
-            throw std::runtime_error("Failed to read preset file.");
-        }
-
-        inFile.close();
-    } else {
+    if (!inFile.is_open()) {
         throw std::runtime_error("Couldn't open preset file.");
     }
+
+    // Read preset into buffer
+    inFile.seekg(0, std::ios::end);
+    std::streamsize size = inFile.tellg();
+    inFile.seekg(0, std::ios::beg);
+    std::vector<char> buffer(size);
+    if (!inFile.read(buffer.data(), size)) {
+        throw std::runtime_error("Failed to read preset file.");
+    }
+    inFile.close();
+
+    // Create MemoryStream and set state in the component
+    auto* state = new Steinberg::MemoryStream(buffer.data(), size);
+    if (component->setState(state) != Steinberg::kResultOk) {
+        delete state;
+        throw std::runtime_error("Failed to set component state.");
+    }
+    
+    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(component);
+    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> controllerConnection(controller);
+    if (componentConnection && controllerConnection) {
+        controllerConnection->disconnect(componentConnection);
+        controllerConnection->connect(componentConnection);
+    }
+
+    // Clean up
+    delete state;
+
+    if (component->setActive(true) != kResultOk) {
+        throw std::runtime_error("Couldn't restart component after loading preset");
+    }
 }
+
 
 } // namespace Vst
 } // namespace Steinberg
