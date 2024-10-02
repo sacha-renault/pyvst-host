@@ -24,7 +24,7 @@ VstHost::~VstHost() {
     terminate();
 }
 
-bool VstHost::init(const std::string& path, const VST3::Optional<VST3::UID>& effectID) {
+bool VstHost::init(const std::string& path /*, const VST3::Optional<VST3::UID>& effectID*/) {
     std::string error;
 	module = VST3::Hosting::Module::create (path, error);
 	if (!module)
@@ -41,11 +41,14 @@ bool VstHost::init(const std::string& path, const VST3::Optional<VST3::UID>& eff
 	{
 		if (classInfo.category () == kVstAudioEffectClass)
 		{
-			if (effectID)
-			{
-				if (*effectID != classInfo.ID ())
-					continue;
-			}
+			// If effectID filtering is needed, uncomment this block
+            /*
+            if (effectID)
+            {
+                if (*effectID != classInfo.ID())
+                    continue;
+            }
+            */
 			plugProvider = owned (new PlugProvider (factory, classInfo, true));
 			break;
 		}
@@ -53,12 +56,15 @@ bool VstHost::init(const std::string& path, const VST3::Optional<VST3::UID>& eff
 
     if (!plugProvider)
 	{
-		std::string error;
-		if (effectID)
-			error =
-			    "No VST3 Audio Module Class with UID " + effectID->toString () + " found in file ";
-		else
-			error = "No VST3 Audio Module Class found in file ";
+		// If effectID filtering is needed, uncomment this block
+        /*
+        std::string error;
+        if (effectID)
+            error = "No VST3 Audio Module Class with UID " + effectID->toString() + " found in file ";
+        else
+            error = "No VST3 Audio Module Class found in file ";
+        */
+        std::string error = "No VST3 Audio Module Class found in file ";
 		error += path;
 		throw std::runtime_error(error);
 	}

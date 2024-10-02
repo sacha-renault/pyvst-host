@@ -22,11 +22,7 @@ class VstHost:
         ) -> None:
         pass
 
-    def init(
-        self,
-        path: str,
-        effect_id: VST3.Optional<VST3.UID> = VST3.Optional<VST3.UID>()
-        ) -> bool:
+    def init(self, path: str) -> bool:
         pass
     def terminate(self) -> None:
         pass
