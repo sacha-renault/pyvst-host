@@ -25,9 +25,9 @@ ext_modules = [
         language='c++',
         extra_compile_args=[
             '-std=c++17',              # Use C++17 standard
-            '-D_DEBUG',                # Define debug flag
-            '-fdiagnostics-color=always',  # Enable colored diagnostics
-            '-g',                       # Include debug symbols
+            '-DNDEBUG',            # Disable debug-related features
+            '-DSMTG_RELEASE',      # Steinberg specific flag for release mode
+            '-O3',                 # Full optimization for release build
             "-DPYBIND11_DETAILED_ERROR_MESSAGES"
         ],
         extra_link_args=[

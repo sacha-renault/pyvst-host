@@ -5,3 +5,4 @@ output.wav
 *.so
 build
 __pycache__
+test.ipynb
