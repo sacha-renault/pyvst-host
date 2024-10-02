@@ -2,3 +2,6 @@
 main
 VitalInstaller
 output.wav
+*.so
+build
+__pycache__

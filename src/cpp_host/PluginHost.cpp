@@ -24,7 +24,7 @@ VstHost::~VstHost() {
     terminate();
 }
 
-bool VstHost::init(const std::string& path, VST3::Optional<VST3::UID> effectID) {
+bool VstHost::init(const std::string& path, const VST3::Optional<VST3::UID>& effectID) {
     std::string error;
 	module = VST3::Hosting::Module::create (path, error);
 	if (!module)

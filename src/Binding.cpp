@@ -97,8 +97,7 @@ private:
     float* data_;
 };
 
-
-void py_init_module_pyvst3_host(py::module& m)      //  rename this function name!!!
+void py_init_module_pyvst3_host(py::module& m)
 {
     // You can add any code here
 
@@ -200,4 +199,11 @@ void py_init_module_pyvst3_host(py::module& m)      //  rename this function nam
         // Return the output as a NumPy array
         return output_buffer.to_numpy();
     }, py::arg("input_array"));
+}
+
+PYBIND11_MODULE(pyvst3_host, m) {
+    m.doc() = "Python bindings for the VST3 host";  // Optional module docstring
+
+    // Initialize the module and add classes or functions
+    py_init_module_pyvst3_host(m);
 }

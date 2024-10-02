@@ -27,7 +27,7 @@ public:
         int symbolicSampleSize = Steinberg::Vst::SymbolicSampleSizes::kSample32);
     ~VstHost();
 
-    bool init(const std::string& path, VST3::Optional<VST3::UID> effectID = {});
+    bool init(const std::string& path, const VST3::Optional<VST3::UID>& effectID = {});
     void terminate();
 
     // Function for effet (process audio input)
