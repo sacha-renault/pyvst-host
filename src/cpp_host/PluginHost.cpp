@@ -211,6 +211,12 @@ void VstHost::prepareParametersChange(Steinberg::Vst::ParameterChanges& paramete
         }
     }
 
+    // the parameter change wil be pased to audio processor,
+    // We have to warn controller
+    for (const auto& [paramID, value] : parametersChangeMap) {
+        controller->setParamNormalized(paramID, value);
+    }
+
     // clear parametersChangeMap
     parametersChangeMap.clear();
 }
@@ -227,7 +233,8 @@ std::vector<VstParameter> VstHost::getParameters() {
         for (int i = 0 ; i < numParameters; ++i ) {
             Steinberg::Vst::ParameterInfo infos;
             if (controller->getParameterInfo(i, infos) == Steinberg::kResultOk) {
-                parameters.emplace_back(convertInfoToParam(infos));
+                double value = controller->getParamNormalized(infos.id);
+                parameters.emplace_back(convertInfoToParam(infos, value));
             } else {
                 std::cerr << "Error fetching param at index : " << i << "." << std::endl;
             }

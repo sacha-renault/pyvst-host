@@ -144,23 +144,25 @@ void py_init_module_pyvst3_host(py::module& m)
         py::class_<VstParameter>
             (m, "VstParameter", "")
         .def(py::init<>([](
-        std::string title = std::string(), std::string shortTitle = std::string(), double defaultNormalizedValue = double(), int flags = int(), int stepCount = int(), int unitId = int(), std::string units = std::string())
+        std::string title = std::string(), std::string shortTitle = std::string(), double defaultNormalizedValue = double(), double value = double(), int flags = int(), int stepCount = int(), int unitId = int(), std::string units = std::string())
         {
             auto r = std::make_unique<VstParameter>();
             r->title = title;
             r->shortTitle = shortTitle;
             r->defaultNormalizedValue = defaultNormalizedValue;
+            r->value = value;
             r->flags = flags;
             r->stepCount = stepCount;
             r->unitId = unitId;
             r->units = units;
             return r;
         })
-        , py::arg("title") = std::string(), py::arg("short_title") = std::string(), py::arg("default_normalized_value") = double(), py::arg("flags") = int(), py::arg("step_count") = int(), py::arg("unit_id") = int(), py::arg("units") = std::string()
+        , py::arg("title") = std::string(), py::arg("short_title") = std::string(), py::arg("default_normalized_value") = double(), py::arg("value") = double(), py::arg("flags") = int(), py::arg("step_count") = int(), py::arg("unit_id") = int(), py::arg("units") = std::string()
         )
         .def_readwrite("title", &VstParameter::title, "")
         .def_readwrite("short_title", &VstParameter::shortTitle, "")
         .def_readwrite("default_normalized_value", &VstParameter::defaultNormalizedValue, "")
+        .def_readwrite("value", &VstParameter::value, "")
         .def_readwrite("id", &VstParameter::id, "")
         .def_readwrite("flags", &VstParameter::flags, "")
         .def_readwrite("step_count", &VstParameter::stepCount, "")
@@ -216,7 +218,7 @@ void py_init_module_pyvst3_host(py::module& m)
     pyClassVstParameter.def("__repr__", [](VstParameter& self) {
         return "Parameter: (name=" + self.title +
             ", id=" + std::to_string(self.id) +
-            ", value=" + std::to_string(self.defaultNormalizedValue) + ")";
+            ", value=" + std::to_string(self.value) + ")";
     });
 }
 

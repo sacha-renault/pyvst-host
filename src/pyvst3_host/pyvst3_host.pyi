@@ -63,6 +63,7 @@ class VstParameter:
     title: str
     short_title: str
     default_normalized_value: float
+    value: float
     id: int
     flags: int
     step_count: int
@@ -89,6 +90,7 @@ class VstParameter:
         title: str = "",
         short_title: str = "",
         default_normalized_value: float = float(),
+        value: float = float(),
         flags: int = int(),
         step_count: int = int(),
         unit_id: int = int(),

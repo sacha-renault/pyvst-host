@@ -7,6 +7,7 @@ struct VstParameter {
     std::string title;
     std::string shortTitle;
     double defaultNormalizedValue;
+    double value;
     unsigned int id;
     int flags;
     int stepCount;
@@ -24,7 +25,7 @@ struct VstParameter {
 };
 
 
-inline VstParameter convertInfoToParam(const Steinberg::Vst::ParameterInfo& info) {
+inline VstParameter convertInfoToParam(const Steinberg::Vst::ParameterInfo& info, double value) {
     VstParameter param;
 
     try {
@@ -46,6 +47,7 @@ inline VstParameter convertInfoToParam(const Steinberg::Vst::ParameterInfo& info
     }
 
     // Assign the rest of the ParameterInfo fields
+    param.value = value;
     param.defaultNormalizedValue = info.defaultNormalizedValue;
     param.id = info.id;
     param.flags = info.flags;
