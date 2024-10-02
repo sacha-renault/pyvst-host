@@ -54,6 +54,7 @@ class VstHost:
 
 
 ####################    <generated_from:Utils.h>    ####################
+
 ####################    </generated_from:Utils.h>    ####################
 
 
