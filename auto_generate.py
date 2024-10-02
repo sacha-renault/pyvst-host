@@ -26,7 +26,7 @@ def my_litgen_options() -> litgen.LitgenOptions:
     # ///////////////////////////////////////////////////////////////////
     # We want to exclude `inline void priv_SetOptions(bool v) {}` from the bindings
     # priv_ is a prefix for private functions that we don't want to expose
-    options.fn_exclude_by_name__regex = "^priv_"
+    options.fn_exclude_by_name__regex = "^priv_|^create_midi_events|^convertInfoToParam"
 
     # Inside `inline void SetOptions(bool v, bool priv_param = false) {}`,
     # we don't want to expose the private parameter priv_param
@@ -64,7 +64,7 @@ def autogenerate() -> None:
 
     include_dir = repository_dir + "/src/cpp_host/"
 
-    header_files = []
+    header_files = [ ]
     for root, _, files in os.walk(include_dir):
         for file in files:
             if file.endswith(".hpp") or file.endswith(".h"):
@@ -75,7 +75,7 @@ def autogenerate() -> None:
         options=my_litgen_options(),
         input_cpp_header_files=header_files,
         output_cpp_pydef_file=output_dir + "/Binding.cpp",
-        output_stub_pyi_file=output_dir + "/pyvst3_host/lib/__init__.pyi",
+        output_stub_pyi_file=output_dir + "/pyvst3_host/pyvst3.pyi",
     )
 
 

@@ -2,10 +2,9 @@
 #include <vector>
 #include "PluginHost.hpp"
 
-// A utility function to create MIDI note events
-inline std::vector<Steinberg::Vst::Event> create_midi_events(const std::vector<std::tuple<int, int, float, bool>>& notes) {
-    // Vector to store VST events
-    std::vector<Steinberg::Vst::Event> events;
+inline Steinberg::Vst::EventList create_midi_events(const std::vector<std::tuple<int, int, float, bool>>& notes) {
+    // Create an EventList instance
+    Steinberg::Vst::EventList eventList;
 
     for (const auto& note : notes) {
         int channel = std::get<0>(note);
@@ -26,8 +25,8 @@ inline std::vector<Steinberg::Vst::Event> create_midi_events(const std::vector<s
             event.noteOff.velocity = velocity;
         }
 
-        events.push_back(event);
+        eventList.addEvent(event);
     }
 
-    return events;
+    return eventList;
 }
