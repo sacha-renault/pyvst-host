@@ -11,10 +11,10 @@ def _string_note_to_pitch(note: str) -> int:
 
     # Extract relative pitch and octave level
     if len(note) == 3:
-        rpitch = note[:2]  # Handles notes like "C#"
+        rpitch = note[:2].upper()  # Handles notes like "C#"
         octave = note[2]
     else:
-        rpitch = note[0]   # Handles notes like "C"
+        rpitch = note[0].upper()   # Handles notes like "C"
         octave = note[1]
 
     if rpitch not in __notes:

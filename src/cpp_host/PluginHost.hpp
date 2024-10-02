@@ -38,6 +38,7 @@ public:
 
     std::vector<VstParameter> getParameters();
     void setParameter(unsigned int id, double value);
+    void setParameter(std::string title, double value);
 
 private:
     VST3::Hosting::Module::Ptr module {nullptr};
@@ -45,6 +46,7 @@ private:
     IPtr<IComponent> component {nullptr};
     IPtr<IEditController> controller {nullptr};
     std::unordered_map<unsigned int, double> parametersChangeMap;
+    std::unordered_map<std::string, unsigned int> parametersTitleIdMap;
     Steinberg::Vst::ProcessSetup setup_;
 
     void prepareParametersChange(Steinberg::Vst::ParameterChanges& parameterChanges);

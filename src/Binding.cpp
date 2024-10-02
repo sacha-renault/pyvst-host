@@ -130,7 +130,9 @@ void py_init_module_pyvst3_host(py::module& m)
         .def("get_parameters",
             &Steinberg::Vst::VstHost::getParameters)
         .def("set_parameter",
-            &Steinberg::Vst::VstHost::setParameter, py::arg("id"), py::arg("value"))
+            py::overload_cast<unsigned int, double>(&Steinberg::Vst::VstHost::setParameter), py::arg("id"), py::arg("value"))
+        .def("set_parameter",
+            py::overload_cast<std::string, double>(&Steinberg::Vst::VstHost::setParameter), py::arg("title"), py::arg("value"))
         ;
     ////////////////////    </generated_from:PluginHost.hpp>    ////////////////////
 

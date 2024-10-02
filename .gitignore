@@ -6,3 +6,4 @@ output.wav
 build
 __pycache__
 test.ipynb
+vital_param_names.json

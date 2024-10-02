@@ -104,6 +104,18 @@ bool VstHost::init(const std::string& path /*, const VST3::Optional<VST3::UID>& 
         throw std::runtime_error("Couldn't access audio interface");
     }
 
+    // map all parameters into the unordered map
+    // init number parameters
+    int numParameters = controller->getParameterCount();
+    for (int i = 0 ; i < numParameters ; ++i) {
+        Steinberg::Vst::ParameterInfo infos;
+        if (controller->getParameterInfo(i, infos) == Steinberg::kResultOk) {
+            parametersTitleIdMap[Steinberg::Vst::StringConvert::convert(infos.title)] = infos.id;
+        } else {
+            std::cerr << "Error fetching param at index : " << i << "." << std::endl;
+        }
+    }
+
     return true;
 }
 
@@ -255,6 +267,10 @@ void VstHost::setParameter(unsigned int id, double value) {
     if (value > 1.0) value = 1.0;
     if (value < 0.0) value = 0.0;
     parametersChangeMap[id] = value; // change value here.
+}
+
+void VstHost::setParameter(std::string title, double value) {
+    setParameter(parametersTitleIdMap[title], value);
 }
 
 } // namespace Vst
