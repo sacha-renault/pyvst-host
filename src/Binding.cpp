@@ -208,6 +208,12 @@ void py_init_module_pyvst3_host(py::module& m)
         // Return the output as a NumPy array
         return output_buffer.to_numpy();
     }, py::arg("input_array"));
+
+    pyClassVstParameter.def("__repr__", [](VstParameter& self) {
+        return "Parameter: (name=" + self.title +
+            ", id=" + std::to_string(self.id) +
+            ", value=" + std::to_string(self.defaultNormalizedValue) + ")";
+    });
 }
 
 PYBIND11_MODULE(pyvst3_host, m) {
