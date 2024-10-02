@@ -3,6 +3,7 @@ import sys
 import setuptools
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
+import subprocess
 import pybind11
 
 # Define the C++ extension
@@ -74,18 +75,25 @@ class CustomBuildExt(build_ext):
             # Move the .so file to the target directory
             self.copy_file(original_path, target_path)
 
-# Define the setup configuration
-setup(
-    name='pyvst3_host',
-    version='0.1.0',
-    author='Sacha',
-    author_email='sacha@example.com',
-    description='Python bindings for VST host plugin interface using pybind11',
-    long_description=open('readme.md').read(),
-    long_description_content_type='text/markdown',
-    ext_modules=ext_modules,
-    cmdclass={'build_ext': CustomBuildExt},
-    zip_safe=False,
-    setup_requires=['pybind11>=2.5.0'],
-    install_requires=['pybind11>=2.5.0'],
-)
+if __name__ == "__main__":
+    # run code auto gen
+    print("Run auto gen")
+    subprocess.run([
+        sys.executable, "auto_generate.py"
+    ])
+
+    # Define the setup configuration
+    setup(
+        name='pyvst3_host',
+        version='0.1.0',
+        author='Sacha',
+        author_email='sacha@example.com',
+        description='Python bindings for VST host plugin interface using pybind11',
+        long_description=open('readme.md').read(),
+        long_description_content_type='text/markdown',
+        ext_modules=ext_modules,
+        cmdclass={'build_ext': CustomBuildExt},
+        zip_safe=False,
+        setup_requires=['pybind11>=2.5.0'],
+        install_requires=['pybind11>=2.5.0'],
+    )
