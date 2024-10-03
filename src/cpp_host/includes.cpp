@@ -1,4 +1,4 @@
-#ifdef _WIN
+#ifdef WIN32
 #include "vst/hosting/module_win32.cpp"
 #include "common/threadchecker_win32.cpp"
 

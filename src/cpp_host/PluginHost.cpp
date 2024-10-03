@@ -276,7 +276,7 @@ void VstHost::setParameter(std::string title, double value) {
 void VstHost::savePreset(std::string& path) {
     auto* state = new Steinberg::MemoryStream();
     if (component->getState(state) == Steinberg::kResultOk) {
-        std::ofstream outFile("plugin_state.vstpreset", std::ios::binary);
+        std::ofstream outFile(path, std::ios::binary);
         if (outFile.is_open()) {
             outFile.write(reinterpret_cast<const char*>(state->getData()), state->getSize());
             outFile.close();
@@ -314,7 +314,7 @@ void VstHost::loadPreset(const std::string& path) {
         delete state;
         throw std::runtime_error("Failed to set component state.");
     }
-    
+
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(component);
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> controllerConnection(controller);
     if (componentConnection && controllerConnection) {
