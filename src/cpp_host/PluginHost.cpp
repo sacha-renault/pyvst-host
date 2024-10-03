@@ -315,11 +315,28 @@ void VstHost::loadPreset(const std::string& path) {
         throw std::runtime_error("Failed to set component state.");
     }
 
-    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(component);
-    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> controllerConnection(controller);
-    if (componentConnection && controllerConnection) {
-        controllerConnection->disconnect(componentConnection);
-        controllerConnection->connect(componentConnection);
+    // Reset the stream position for the controller
+    if (state->seek(0, Steinberg::IBStream::kIBSeekSet, nullptr) != Steinberg::kResultOk) {
+        delete state;
+        throw std::runtime_error("Failed to reset stream position.");
+    }
+
+    // Load the same state into the controller
+    if (controller->setComponentState(state) != Steinberg::kResultOk) {
+        // Terminate and re-initialize the controller
+        Steinberg::FUnknownPtr<Steinberg::Vst::IEditController> componentAsController;
+        if (component->queryInterface(Steinberg::Vst::IEditController::iid, (void**)&componentAsController) == Steinberg::kResultOk && componentAsController) {
+            // Use componentAsController to get parameter values
+            Steinberg::int32 numParameters = componentAsController->getParameterCount();
+            for (Steinberg::int32 i = 0; i < numParameters; ++i) {
+                Steinberg::Vst::ParameterInfo paramInfo = {};
+                if (componentAsController->getParameterInfo(i, paramInfo) == Steinberg::kResultOk) {
+                    Steinberg::Vst::ParamValue value = componentAsController->getParamNormalized(paramInfo.id);
+                    // Update your host's parameter representation
+                    controller->setParamNormalized(paramInfo.id, value);
+                }
+            }
+        }
     }
 
     // Clean up
