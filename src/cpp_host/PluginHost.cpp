@@ -325,18 +325,7 @@ void VstHost::loadPreset(const std::string& path) {
     if (controller->setComponentState(state) != Steinberg::kResultOk) {
         // Terminate and re-initialize the controller
         Steinberg::FUnknownPtr<Steinberg::Vst::IEditController> componentAsController;
-        if (component->queryInterface(Steinberg::Vst::IEditController::iid, (void**)&componentAsController) == Steinberg::kResultOk && componentAsController) {
-            // Use componentAsController to get parameter values
-            Steinberg::int32 numParameters = componentAsController->getParameterCount();
-            for (Steinberg::int32 i = 0; i < numParameters; ++i) {
-                Steinberg::Vst::ParameterInfo paramInfo = {};
-                if (componentAsController->getParameterInfo(i, paramInfo) == Steinberg::kResultOk) {
-                    Steinberg::Vst::ParamValue value = componentAsController->getParamNormalized(paramInfo.id);
-                    // Update your host's parameter representation
-                    controller->setParamNormalized(paramInfo.id, value);
-                }
-            }
-        }
+        component->queryInterface(Steinberg::Vst::IEditController::iid, (void**)&componentAsController);
     }
 
     // Clean up
