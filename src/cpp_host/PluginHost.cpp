@@ -4,6 +4,8 @@
 namespace Steinberg {
 namespace Vst {
 
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 VstHost::VstHost(
     double samplerate,
     int maxSamplesPerBlock,
@@ -16,6 +18,9 @@ VstHost::VstHost(
     setup_.processMode = processMode;
 };
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 VstHost::~VstHost() {
     controller->terminate();
     component->terminate();
@@ -24,6 +29,9 @@ VstHost::~VstHost() {
     terminate();
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 bool VstHost::init(const std::string& path /*, const VST3::Optional<VST3::UID>& effectID*/) {
     std::string error;
 	module = VST3::Hosting::Module::create (path, error);
@@ -78,7 +86,7 @@ bool VstHost::init(const std::string& path /*, const VST3::Optional<VST3::UID>& 
     }
 
     // Initialize component
-    if (component->initialize(nullptr) != Steinberg::kResultOk || component->setActive(true) != Steinberg::kResultOk) {
+    if (component->initialize(nullptr) != Steinberg::kResultOk) {
         std::cerr << "Failed to initialize component." << std::endl;
         return false;
     }
@@ -119,12 +127,18 @@ bool VstHost::init(const std::string& path /*, const VST3::Optional<VST3::UID>& 
     return true;
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::terminate() {
     plugProvider = nullptr;
     module = nullptr;
     component = nullptr;
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::process(float** inputBuffers, float** outputBuffers, int numChannels, int numSamples) {
     // Ensure input and output buffers are valid
     if (numChannels <= 0) {
@@ -136,8 +150,8 @@ void VstHost::process(float** inputBuffers, float** outputBuffers, int numChanne
     }
 
     // Prepare the process data object
-    Steinberg::Vst::ProcessData processData = {};
-    processData.numSamples = numSamples;
+    Steinberg::Vst::ProcessData data = {};
+    data.numSamples = numSamples;
 
     // Set up input and output audio bus buffers
     Steinberg::Vst::AudioBusBuffers inputBus;
@@ -149,26 +163,25 @@ void VstHost::process(float** inputBuffers, float** outputBuffers, int numChanne
     outputBus.channelBuffers32 = outputBuffers;
 
     // Assign buses to process data
-    processData.inputs = &inputBus;
-    processData.outputs = &outputBus;
-    processData.numInputs = 1;
-    processData.numOutputs = 1;
+    data.inputs = &inputBus;
+    data.outputs = &outputBus;
+    data.numInputs = 1;
+    data.numOutputs = 1;
 
     // For parameter change
     Steinberg::Vst::ParameterChanges parameterChanges;
     prepareParametersChange(parameterChanges);
-    processData.inputParameterChanges = &parameterChanges;
+    data.inputParameterChanges = &parameterChanges;
 
-    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
-    if (component->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
-        audioProcessor->process(processData);
-    } else {
-        throw std::runtime_error("Couldn't access audio interface");
-    }
+    // process data
+    this->processData(data);
 
     // Note: Ensure correct format conversions (e.g., sample rate, bit depth) if necessary.
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::process(Steinberg::Vst::EventList& eventList, float** outputBuffers, int numChannels, int numSamples) {
     // Ensure output buffers are valid
     if (numChannels <= 0) {
@@ -182,8 +195,8 @@ void VstHost::process(Steinberg::Vst::EventList& eventList, float** outputBuffer
     }
 
     // Prepare the process data object
-    Steinberg::Vst::ProcessData processData = {};
-    processData.numSamples = numSamples;
+    Steinberg::Vst::ProcessData data = {};
+    data.numSamples = numSamples;
 
     // Set up output audio bus buffers
     Steinberg::Vst::AudioBusBuffers outputBus;
@@ -191,28 +204,58 @@ void VstHost::process(Steinberg::Vst::EventList& eventList, float** outputBuffer
     outputBus.channelBuffers32 = outputBuffers;
 
     // Assign buses to process data
-    processData.outputs = &outputBus;
-    processData.numOutputs = 1;
+    data.outputs = &outputBus;
+    data.numOutputs = 1;
 
     // Assign event list to process data
-    processData.inputEvents = &eventList;
+    data.inputEvents = &eventList;
 
     // For parameter change
     Steinberg::Vst::ParameterChanges parameterChanges;
     prepareParametersChange(parameterChanges);
-    processData.inputParameterChanges = &parameterChanges;
+    data.inputParameterChanges = &parameterChanges;
 
-    // Access the audio processor
-    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
-    if (component->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
-        audioProcessor->process(processData);
-    } else {
-        throw std::runtime_error("Couldn't access audio interface");
-    }
+    // process data
+    this->processData(data);
 
     // Note: Ensure correct format conversions (e.g., sample rate, bit depth) if necessary.
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+void VstHost::processData(Steinberg::Vst::ProcessData& data) {
+    // Ensure the component is active
+    if (component->setActive(true) != Steinberg::kResultOk) {
+        throw std::runtime_error("Failed to activate component.");
+    }
+
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
+    if (component->queryInterface(Steinberg::Vst::IAudioProcessor::iid, (void**)&audioProcessor) == Steinberg::kResultOk && audioProcessor) {
+        if (audioProcessor->setProcessing(true) != Steinberg::kResultOk) {
+            throw std::runtime_error("Couldn't start processing.");
+        }
+        
+        if (audioProcessor->process(data) != Steinberg::kResultOk) {
+            throw std::runtime_error("Couldn't process data");
+        }
+
+        if (audioProcessor->setProcessing(false) != Steinberg::kResultOk) {
+            throw std::runtime_error("Couldn't start processing.");
+        }
+    } else {
+        throw std::runtime_error("Couldn't access audio interface");
+    }
+
+    // Optionally deactivate the component after processing
+    if (component->setActive(false) != Steinberg::kResultOk) {
+        throw std::runtime_error("Failed to deactivate component.");
+    }
+}
+
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::prepareParametersChange(Steinberg::Vst::ParameterChanges& parameterChanges) {
     for (const auto& entry : parametersChangeMap) {
         const unsigned int& paramID = entry.first;
@@ -237,6 +280,9 @@ void VstHost::prepareParametersChange(Steinberg::Vst::ParameterChanges& paramete
     parametersChangeMap.clear();
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 std::vector<VstParameter> VstHost::getParameters() {
     if (controller) {
         // init number parameters
@@ -262,6 +308,9 @@ std::vector<VstParameter> VstHost::getParameters() {
     }
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::setParameter(unsigned int id, double value) {
     // Ensure value is normalized to the range [0.0, 1.0]
     if (value > 1.0) value = 1.0;
@@ -269,10 +318,16 @@ void VstHost::setParameter(unsigned int id, double value) {
     parametersChangeMap[id] = value; // change value here.
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::setParameter(std::string title, double value) {
     setParameter(parametersTitleIdMap[title], value);
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::savePreset(std::string& path) {
     auto* state = new Steinberg::MemoryStream();
     if (component->getState(state) == Steinberg::kResultOk) {
@@ -282,10 +337,15 @@ void VstHost::savePreset(std::string& path) {
             outFile.close();
         }
     } else {
+        delete state;
         throw std::runtime_error("Coudln't access processor state.");
     }
+    delete state;
 }
 
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::loadPreset(const std::string& path) {
     // first set component to inactive
     if (component->setActive(false) != kResultOk) {
@@ -335,6 +395,46 @@ void VstHost::loadPreset(const std::string& path) {
         throw std::runtime_error("Couldn't restart component after loading preset");
     }
 }
+
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+void VstHost::clearInternalBuffer() {
+    if (!component) {
+        throw std::runtime_error("Component is not initialized.");
+    }
+
+    // Create dummy processing data to clear the internal buffer
+    Steinberg::Vst::ProcessData data = {};
+    data.numSamples = 64; // Assuming a typical block size, adjust as needed
+
+    // Create silent buffers (filled with zeros) to simulate silence processing
+    float silentBuffer[64] = {0.0f};
+    Steinberg::Vst::AudioBusBuffers inputBus = {};
+    Steinberg::Vst::AudioBusBuffers outputBus = {};
+    
+    inputBus.numChannels = 2;  // Assuming stereo input
+    inputBus.channelBuffers32 = new float*[2]{silentBuffer, silentBuffer};
+
+    outputBus.numChannels = 2;  // Assuming stereo output
+    outputBus.channelBuffers32 = new float*[2]{silentBuffer, silentBuffer};
+
+    data.inputs = &inputBus;
+    data.outputs = &outputBus;
+    data.numInputs = 1;
+    data.numOutputs = 1;
+
+    // Use the existing processData function to handle the processing of dummy data
+    processData(data);
+
+    // Clean up allocated resources
+    delete[] inputBus.channelBuffers32;
+    delete[] outputBus.channelBuffers32;
+
+    std::cout << "Internal buffer cleared successfully by processing dummy input." << std::endl;
+}
+
+
 
 
 } // namespace Vst

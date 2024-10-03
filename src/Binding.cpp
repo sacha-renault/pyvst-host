@@ -188,6 +188,8 @@ void py_init_module_pyvst3_host(py::module& m)
             &Steinberg::Vst::VstHost::savePreset, py::arg("path"))
         .def("load_preset",
             &Steinberg::Vst::VstHost::loadPreset, py::arg("path"))
+        .def("clear_internal_buffer",
+            &Steinberg::Vst::VstHost::clearInternalBuffer)
         ;
     ////////////////////    </generated_from:PluginHost.hpp>    ////////////////////
 

@@ -108,6 +108,8 @@ class VstHost:
         pass
     def load_preset(self, path: str) -> None:
         pass
+    def clear_internal_buffer(self) -> None:
+        pass
 
 
 

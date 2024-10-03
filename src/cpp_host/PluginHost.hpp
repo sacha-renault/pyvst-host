@@ -45,6 +45,7 @@ public:
     void setParameter(std::string title, double value);
     void savePreset(std::string& path);
     void loadPreset(const std::string& path);
+    void clearInternalBuffer();
 
 private:
     VST3::Hosting::Module::Ptr module {nullptr};
@@ -56,6 +57,7 @@ private:
     Steinberg::Vst::ProcessSetup setup_;
 
     void prepareParametersChange(Steinberg::Vst::ParameterChanges& parameterChanges);
+    void processData(Steinberg::Vst::ProcessData& data);
 };
 
 } // namespace Vst
