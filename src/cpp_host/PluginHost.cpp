@@ -97,11 +97,17 @@ bool VstHost::init(const std::string& path /*, const VST3::Optional<VST3::UID>& 
     }
 
     // Connect component and controller (optional, but good for parameter updates)
-    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> componentConnection(component);
-    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> controllerConnection(controller);
-    if (componentConnection && controllerConnection) {
-        controllerConnection->connect(componentConnection);
-        //componentConnection->connect(controllerConnection);
+    // connect the 2 components
+    Vst::IConnectionPoint* iConnectionPointComponent = nullptr;
+    Vst::IConnectionPoint* iConnectionPointController = nullptr;
+    component->queryInterface (Vst::IConnectionPoint::iid, (void**)&iConnectionPointComponent);
+    controller->queryInterface (Vst::IConnectionPoint::iid, (void**)&iConnectionPointController);
+    if (iConnectionPointComponent && iConnectionPointController)
+    {
+        iConnectionPointComponent->connect (iConnectionPointController);
+        iConnectionPointController->connect (iConnectionPointComponent);
+    } else {
+        std::runtime_error("Coudln't connect component with controller");
     }
 
     // get the processor object
@@ -235,7 +241,7 @@ void VstHost::processData(Steinberg::Vst::ProcessData& data) {
         if (audioProcessor->setProcessing(true) != Steinberg::kResultOk) {
             throw std::runtime_error("Couldn't start processing.");
         }
-        
+
         if (audioProcessor->process(data) != Steinberg::kResultOk) {
             throw std::runtime_error("Couldn't process data");
         }
@@ -400,38 +406,7 @@ void VstHost::loadPreset(const std::string& path) {
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 void VstHost::clearInternalBuffer() {
-    if (!component) {
-        throw std::runtime_error("Component is not initialized.");
-    }
-
-    // Create dummy processing data to clear the internal buffer
-    Steinberg::Vst::ProcessData data = {};
-    data.numSamples = 64; // Assuming a typical block size, adjust as needed
-
-    // Create silent buffers (filled with zeros) to simulate silence processing
-    float silentBuffer[64] = {0.0f};
-    Steinberg::Vst::AudioBusBuffers inputBus = {};
-    Steinberg::Vst::AudioBusBuffers outputBus = {};
-    
-    inputBus.numChannels = 2;  // Assuming stereo input
-    inputBus.channelBuffers32 = new float*[2]{silentBuffer, silentBuffer};
-
-    outputBus.numChannels = 2;  // Assuming stereo output
-    outputBus.channelBuffers32 = new float*[2]{silentBuffer, silentBuffer};
-
-    data.inputs = &inputBus;
-    data.outputs = &outputBus;
-    data.numInputs = 1;
-    data.numOutputs = 1;
-
-    // Use the existing processData function to handle the processing of dummy data
-    processData(data);
-
-    // Clean up allocated resources
-    delete[] inputBus.channelBuffers32;
-    delete[] outputBus.channelBuffers32;
-
-    std::cout << "Internal buffer cleared successfully by processing dummy input." << std::endl;
+    // TODO
 }
 
 
