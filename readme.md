@@ -38,6 +38,7 @@ notes = [
         0.8,    # Velocity
         0,      # start (can be -1 for no start)
         20_000) # end (can be -1 for no end)
+]
 
 host = VstHost(samplerate=44_100, max_samples_per_block=512)
 host.init("path/to/plugin.vst3")
@@ -45,7 +46,6 @@ host.init("path/to/plugin.vst3")
 n_channel = 2
 n_samples = 44_100 # 1 second processing
 output = host.process_midi(notes, n_channel, n_samples)
-]
 ```
 
 ## Known Issues
